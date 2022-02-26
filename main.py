@@ -71,11 +71,11 @@ def import_table_to_sql(engine, df, table_name, schema):
     except Exception as e:
         print(f'Error {e}')
 
-def import_files_to_sql(connstr, list_files_to_import_db:list):
-    engine = create_engine(connstr, fast_executemany=True)
+def import_files_to_sql(c_string, list_files_to_import_db:list):
+    engine = create_engine(c_string, fast_executemany=True)
     #csv or json or excel
     for file in list_files_to_import_db:
-        filepath = file['filepath']
+        filepath = file['file_path']
         schema = file['schema']
         table_name = file['table_name']
 
@@ -102,11 +102,12 @@ def import_files_to_sql(connstr, list_files_to_import_db:list):
 
         import_table_to_sql(engine, df, table_name, schema)
 
-def import_folder_to_sql(connstr, folder_path):
-    engine = create_engine(connstr, fast_executemany=True)
+def import_folder_to_sql(c_string, folder_path):
+    engine = create_engine(c_string, fast_executemany=True)
     for file in os.listdir(folder_path):
         filepath = fr"{folder_path}\{file}"
         filename, ext = os.path.splitext(file)
+        df = ''
         if ext == '.csv':
             df = pd.read_csv(filepath)
             print('Reading CSV')
@@ -125,19 +126,13 @@ def import_folder_to_sql(connstr, folder_path):
             else: pass
         except Exception as e:
             print(f'Error {e}')
-            
 
-def combine_and_import_folder_to_sql(connstr, list_to_import_db:list):
-    # sample_lst_to_db = [
-    #     {'name' : 'historical_price' , 
-    #     'directory' : r'C:\Users\ADMIN\OneDrive\__Study\Python\Data Collection\Scraping\Fireant\Historical Price' ,
-    #     'schema' : 'stock'
-    #     }
-    #     ]
-    engine = create_engine(connstr, fast_executemany=True)
-    for table in list_to_import_db:
+        
+def combine_and_import_folder_to_sql(c_string, list_folders_to_import_db:list):
+    engine = create_engine(c_string, fast_executemany=True)
+    for folder in list_folders_to_import_db:
         df_combine = pd.DataFrame([])
-        for dirpath, dirs, files in os.walk(table['directory']):
+        for dirpath, dirs, files in os.walk(folder['directory']):
             if files != []:
                 for file in files:
                     filepath = fr'{dirpath}\{file}'
@@ -159,8 +154,8 @@ def combine_and_import_folder_to_sql(connstr, list_to_import_db:list):
                     df_combine = df_combine.append(df_temp)
         if len(df_combine) > 0:
             try:
-                table_name = table['name']
-                table_schema = table['schema']
+                table_name = folder['table_name']
+                table_schema = folder['schema']
                 import_table_to_sql(engine, df_combine, table_name, table_schema)
 
             except Exception as e:
