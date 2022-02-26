@@ -71,30 +71,36 @@ def import_table_to_sql(engine, df, table_name, schema):
     except Exception as e:
         print(f'Error {e}')
 
-def import_files_to_sql(connstr, filepath, table_name = '' , schema = ''):
-    #csv or json or excel
+def import_files_to_sql(connstr, list_files_to_import_db:list):
     engine = create_engine(connstr, fast_executemany=True)
-    filename, ext = os.path.splitext(os.path.basename(filepath))
-    if table_name == '': 
-        table_name = filename
-    else:pass
+    #csv or json or excel
+    for file in list_files_to_import_db:
+        filepath = file['filepath']
+        schema = file['schema']
+        table_name = file['table_name']
 
-    if schema == '':
-        schema = ext
-    else:pass
+        filename, ext = os.path.splitext(os.path.basename(filepath))
 
-    if ext == '.csv':
-        df = pd.read_csv(filepath)
-        print('Reading CSV')
-    elif ext == '.json':
-        df = pd.read_json(filepath)
-        print('Reading JSON')
-    elif ext == '.xlsx' or ext == '.xls':
-        df = pd.read_excel(filepath)
-        print('Reading Excel')
-    else:pass        
+        if table_name == '': 
+            table_name = filename
+        else:pass
 
-    import_table_to_sql(engine, df, table_name, schema)
+        if schema == '':
+            schema = ext
+        else:pass
+
+        if ext == '.csv':
+            df = pd.read_csv(filepath)
+            print('Reading CSV')
+        elif ext == '.json':
+            df = pd.read_json(filepath)
+            print('Reading JSON')
+        elif ext == '.xlsx' or ext == '.xls':
+            df = pd.read_excel(filepath)
+            print('Reading Excel')
+        else:pass        
+
+        import_table_to_sql(engine, df, table_name, schema)
 
 def import_folder_to_sql(connstr, folder_path):
     engine = create_engine(connstr, fast_executemany=True)
