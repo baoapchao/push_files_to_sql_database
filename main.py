@@ -54,6 +54,24 @@ def get_column_dtype(df):
 
     return columntype_dict
 
+# define function to read json, excel, or csv:
+def file_to_df(filepath):
+    filename, ext = os.path.splitext(os.path.basename(filepath))
+    df = ''
+    if ext == '.csv':
+        df = pd.read_csv(filepath)
+        print('Reading CSV')
+    elif ext == '.json':
+        df = pd.read_json(filepath)
+        print('Reading JSON')
+    elif ext == '.xlsx' or ext == '.xls':
+        df = pd.read_excel(filepath)
+        print('Reading Excel')
+    else:pass  
+    return df    
+
+
+
 def import_table_to_sql(engine, df, table_name, schema):
     try:
         engine.execute(CreateSchema(schema))
@@ -71,91 +89,63 @@ def import_table_to_sql(engine, df, table_name, schema):
     except Exception as e:
         print(f'Error {e}')
 
-def import_files_to_sql(c_string, list_files_to_import_db:list):
+def import_files_to_sql(c_string, file_list:list):
     engine = create_engine(c_string, fast_executemany=True)
     #csv or json or excel
-    for file in list_files_to_import_db:
-        filepath = file['file_path']
-        schema = file['schema']
-        table_name = file['table_name']
-
+    for filepath in file_list:
         filename, ext = os.path.splitext(os.path.basename(filepath))
 
-        if table_name == '': 
-            table_name = filename
-        else:pass
+        table_name = filename
 
-        if schema == '':
-            schema = ext
-        else:pass
+        schema = ext.replace('.', '')
 
-        if ext == '.csv':
-            df = pd.read_csv(filepath)
-            print('Reading CSV')
-        elif ext == '.json':
-            df = pd.read_json(filepath)
-            print('Reading JSON')
-        elif ext == '.xlsx' or ext == '.xls':
-            df = pd.read_excel(filepath)
-            print('Reading Excel')
-        else:pass        
+        df_import = ''
+        df_import = file_to_df(filepath)
 
-        import_table_to_sql(engine, df, table_name, schema)
+        import_table_to_sql(engine, df_import, table_name, schema)
 
-def import_folder_to_sql(c_string, folder_path):
+def import_folders_to_sql(c_string, folder_list:list):
     engine = create_engine(c_string, fast_executemany=True)
-    for file in os.listdir(folder_path):
-        filepath = fr"{folder_path}\{file}"
-        filename, ext = os.path.splitext(file)
-        df = ''
-        if ext == '.csv':
-            df = pd.read_csv(filepath)
-            print('Reading CSV')
-        elif ext == '.json':
-            df = pd.read_json(filepath)
-            print('Reading JSON')
-        elif ext == '.xlsx' or ext == '.xls':
-            df = pd.read_excel(filepath)
-            print('Reading Excel')
-        else:pass
-        try:
-            if len(df) > 0:
-                table_name = filename
-                table_schema = ext.replace('.', '')
-                import_table_to_sql(engine, df, table_name, table_schema)
-            else: pass
-        except Exception as e:
-            print(f'Error {e}')
+    for folderpath in folder_list:
+        for file in os.listdir(folderpath):
+            filepath = fr"{folderpath}\{file}"
+            filename, ext = os.path.splitext(file)
+
+            schema = ext.replace('.', '')
+
+            df_import = ''
+
+            try:
+                df_import = file_to_df(filepath)
+                if len(df_import) > 0:
+                    table_name = filename
+                    import_table_to_sql(engine, df_import, table_name, schema)
+                else: pass
+            except Exception as e:
+                print(f'Error {e}')
 
         
-def combine_and_import_folder_to_sql(c_string, list_folders_to_import_db:list):
+def combine_and_import_folder_to_sql(c_string, folder_list:list):
     engine = create_engine(c_string, fast_executemany=True)
-    for folder in list_folders_to_import_db:
+    for folder in folder_list:
         df_combine = pd.DataFrame([])
         for dirpath, dirs, files in os.walk(folder['directory']):
             if files != []:
                 for file in files:
                     filepath = fr'{dirpath}\{file}'
-                    try:
-                        df_temp = pd.read_csv(filepath)
-                        print('Reading CSV')
-                    except:
-                        pass
-                    try:
-                        df_temp = pd.read_json(filepath)
-                        print('Reading JSON')
-                    except:
-                        pass
-                    try:
-                        df_temp = pd.read_excel(filepath)
-                        print('Reading Excel')
-                    except:
-                        pass                    
-                    df_combine = df_combine.append(df_temp)
+
+                    df = ''
+                    df = file_to_df(filepath)
+
+                    df_combine = df_combine.append(df)
+
+                    filename, ext = os.path.splitext(file)
+                    schema = ext.replace('.', '')
+
         if len(df_combine) > 0:
             try:
-                table_name = folder['table_name']
-                table_schema = folder['schema']
+                table_name = os.path.basename(folder)
+                table_schema = schema
                 import_table_to_sql(engine, df_combine, table_name, table_schema)
 
             except Exception as e:

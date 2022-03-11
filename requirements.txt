@@ -1,0 +1,4 @@
+pandas==1.4.1
+pyodbc==4.0.32
+sqlalchemy==1.4.31
+pyodbc-4.0.32-cp310-cp310-win_amd64.whl
