@@ -127,9 +127,9 @@ def import_folders_to_sql(c_string, folder_list:list):
         
 def combine_and_import_folder_to_sql(c_string, folder_list:list):
     engine = create_engine(c_string, fast_executemany=True)
-    for folder in folder_list:
+    for folderpath in folder_list:
         df_combine = pd.DataFrame([])
-        for dirpath, dirs, files in os.walk(folder['directory']):
+        for dirpath, dirs, files in os.walk(folderpath):
             if files != []:
                 for file in files:
                     filepath = fr'{dirpath}\{file}'
@@ -144,7 +144,7 @@ def combine_and_import_folder_to_sql(c_string, folder_list:list):
 
         if len(df_combine) > 0:
             try:
-                table_name = os.path.basename(folder)
+                table_name = os.path.basename(folderpath)
                 table_schema = schema
                 import_table_to_sql(engine, df_combine, table_name, table_schema)
 
