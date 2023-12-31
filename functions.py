@@ -70,13 +70,15 @@ def file_to_df(filepath):
     else:pass  
     return df    
 
-
-
-def import_table_to_sql(engine, df, table_name, schema):
+def create_schema(engine, schema):
     try:
         engine.execute(CreateSchema(schema))
         print(f"Created new schema: {schema}")
-    except: pass
+    except: 
+        print(f"Schema {schema} already existed.")   
+
+def import_table_to_sql(engine, df, table_name, schema):
+    create_schema(engine, schema)
     try:
         type_dict = get_column_dtype(df)    
         df.to_sql(
@@ -108,7 +110,7 @@ def import_folders_to_sql(c_string, folder_list:list):
     engine = create_engine(c_string, fast_executemany=True)
     for folderpath in folder_list:
         for file in os.listdir(folderpath):
-            filepath = fr"{folderpath}\{file}"
+            filepath = os.path.join(folderpath, file)
             filename, ext = os.path.splitext(file)
 
             schema = ext.replace('.', '')
@@ -132,7 +134,7 @@ def combine_and_import_folder_to_sql(c_string, folder_list:list):
         for dirpath, dirs, files in os.walk(folderpath):
             if files != []:
                 for file in files:
-                    filepath = fr'{dirpath}\{file}'
+                    filepath = os.path.join(dirpath, file)
 
                     df = ''
                     df = file_to_df(filepath)
